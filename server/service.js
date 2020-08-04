@@ -1,9 +1,11 @@
 const express = require("express");
-
+const ServiceRegistry = require("./lib/ServiceRegistry");
 const service = express();
 
 module.exports = (config) => {
   const log = config.log();
+
+  const serviceRegistry = new serviceRegistry(log);
   // Add a request logging middleware in development mode
   if (service.get("env") === "development") {
     service.use((req, res, next) => {
@@ -14,8 +16,21 @@ module.exports = (config) => {
 
   service.put(
     "/register/:servicename/:serviceversion/:serviceport",
-    (req, res, next) => {
-      return next("Not implemented");
+    (req, res) => {
+      const { servicename, serviceversion, serviceport } = req.params;
+
+      const serviceip = req.connection.remoteAddress.includes("::")
+        ? `[${req.connection.remoteAddress}]`
+        : req.connection.remoteAddress;
+
+      const serviceKey = serviceRegistry.register(
+        servicename,
+        serviceversion,
+        serviceip,
+        serviceport
+      );
+
+      return res.json({ result: serviceKey });
     }
   );
 
