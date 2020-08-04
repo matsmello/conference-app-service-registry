@@ -1,13 +1,14 @@
-const express = require("express");
-const ServiceRegistry = require("./lib/ServiceRegistry");
+const express = require('express');
+const ServiceRegistry = require('./lib/ServiceRegistry');
+
 const service = express();
 
 module.exports = (config) => {
   const log = config.log();
 
-  const serviceRegistry = new serviceRegistry(log);
+  const serviceRegistry = new ServiceRegistry(log);
   // Add a request logging middleware in development mode
-  if (service.get("env") === "development") {
+  if (service.get('env') === 'development') {
     service.use((req, res, next) => {
       log.debug(`${req.method}: ${req.url}`);
       return next();
@@ -15,11 +16,11 @@ module.exports = (config) => {
   }
 
   service.put(
-    "/register/:servicename/:serviceversion/:serviceport",
+    '/register/:servicename/:serviceversion/:serviceport',
     (req, res) => {
       const { servicename, serviceversion, serviceport } = req.params;
 
-      const serviceip = req.connection.remoteAddress.includes("::")
+      const serviceip = req.connection.remoteAddress.includes('::')
         ? `[${req.connection.remoteAddress}]`
         : req.connection.remoteAddress;
 
@@ -27,19 +28,19 @@ module.exports = (config) => {
         servicename,
         serviceversion,
         serviceip,
-        serviceport
+        serviceport,
       );
 
       return res.json({ result: serviceKey });
-    }
+    },
   );
 
   service.delete(
-    "/register/:servicename/:serviceversion/:serviceport",
+    '/register/:servicename/:serviceversion/:serviceport',
     (req, res, next) => {
       const { servicename, serviceversion, serviceport } = req.params;
 
-      const serviceip = req.connection.remoteAddress.includes("::")
+      const serviceip = req.connection.remoteAddress.includes('::')
         ? `[${req.connection.remoteAddress}]`
         : req.connection.remoteAddress;
 
@@ -47,15 +48,21 @@ module.exports = (config) => {
         servicename,
         serviceversion,
         serviceip,
-        serviceport
+        serviceport,
       );
 
       return res.json({ result: serviceKey });
-    }
+    },
   );
 
-  service.put("/find/:servicename/:serviceversion", (req, res, next) => {
-    return next("Not implemented");
+  service.put('/find/:servicename/:serviceversion', (req, res) => {
+    const { servicename, serviceversion } = req.params;
+
+    const svc = serviceRegistry.get(servicename, serviceversion);
+
+    if (!svc) return res.status(404).json({ result: 'Service not found' });
+
+    return res.json(svc);
   });
 
   // eslint-disable-next-line no-unused-vars
